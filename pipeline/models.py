@@ -83,6 +83,8 @@ class Draft(models.Model):
     summary = models.TextField()
     body = models.TextField(help_text='After the card check: failed sentences cut')
     written_body = models.TextField(help_text='As the writer wrote it')
+    image_queries = models.JSONField(default=list, blank=True,
+                                     help_text='Stock photo searches from the writer: abstract, no names or brands')
     status = models.CharField(max_length=20, choices=Status, db_index=True)
     reasons = models.JSONField(default=list, blank=True, help_text='Why it needs review or is blocked')
     checks = models.JSONField(default=list, blank=True, help_text='Card check: every sentence with its verdict')

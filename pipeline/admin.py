@@ -57,8 +57,8 @@ class DraftAdmin(admin.ModelAdmin):
     list_display = ['headline', 'status', 'category', 'sources', 'cut', 'created_at']
     list_filter = ['status', 'event__category', 'event__high_risk']
     search_fields = ['headline', 'body']
-    readonly_fields = ['card', 'reason_list', 'check_table', 'facts_list', 'event', 'written_body', 'writer_model',
-                       'checker_model', 'created_at']
+    readonly_fields = ['card', 'image_queries', 'reason_list', 'check_table', 'facts_list', 'event', 'written_body',
+                       'writer_model', 'checker_model', 'created_at']
     fields = ['status', *readonly_fields]
     list_select_related = ['event']
 

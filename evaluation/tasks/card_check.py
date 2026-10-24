@@ -54,12 +54,12 @@ class CardCheckTask(Task):
 
     def ask(self, case):
         checker = CardChecker(self.client, self.model, self.reasoning_effort)
-        result = checker.check(Card(**case.data['card']), case.data['facts'])
+        result = checker.check(as_card(case.data['card']), case.data['facts'])
         answer = Answer(checks=checks_to_json(result.checks))
         return Completion(answer, answer.model_dump_json(), self.model, result.usage)
 
     def score(self, case, completion):
-        card = Card(**case.data['card'])
+        card = as_card(case.data['card'])
         checks = checks_from_json([check.model_dump() for check in completion.value.checks], case.data['facts'])
         bad = [check for check in checks if any(text in check.sentence.text for text in case.expected)]
         good = [check for check in checks if check not in bad]
@@ -98,6 +98,10 @@ class CardCheckTask(Task):
 
 def statuses(results, kind: str) -> dict:
     return dict(Counter(r.output['status'] for r in results if r.output['kind'] == kind))
+
+
+def as_card(card: dict) -> Card:
+    return Card(card['headline'], card['summary'], card['body'])
 
 
 def with_sentence(card: dict, sentence: str) -> dict:

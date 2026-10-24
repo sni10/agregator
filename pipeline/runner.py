@@ -25,6 +25,7 @@ from .steps.write import CardWriter
 
 STAGES = ('group', 'facts', 'write', 'check')
 MIN_INDEPENDENT_SOURCES = 2  # for high-risk events (spec §8 gates)
+MAX_IMAGE_QUERIES = 3
 
 
 class Pipeline:
@@ -157,6 +158,7 @@ class Pipeline:
                 draft = Draft.objects.create(
                     event=event, headline=card.headline, summary=card.summary, body=card.body,
                     written_body=card.body, status=Draft.Status.UNCHECKED, writer_model=self.writer_model,
+                    image_queries=[query.strip() for query in card.image_queries if query.strip()][:MAX_IMAGE_QUERIES],
                 )
                 draft.facts.set(facts)
                 event.title = card.headline[:500]

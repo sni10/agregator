@@ -48,10 +48,11 @@ class FakeLM:
         elif step.startswith('You write'):
             value = ({'headline': 'Bridgy bridge loses $12 million', 'summary': 'Attackers drained $12 million.',
                       'body': 'Attackers drained $12 million from the Bridgy bridge on Friday. Bridgy paused '
-                              'deposits. No arrests were made.'} if hack else
+                              'deposits. No arrests were made.', 'image_queries': ['bridge night']} if hack else
                      {'headline': 'Model X is 40% cheaper', 'summary': 'Example Corp released Model X on Monday.',
                       'body': 'Model X is 40% cheaper than Model W. It supports 12 languages. '
-                              'The company did not give a release date for Europe. It is the best model ever.'})
+                              'The company did not give a release date for Europe. It is the best model ever.',
+                      'image_queries': [' circuit board ', '', 'server room', 'data center', 'chip']})
         elif step.startswith('You check one sentence'):
             sentence = user.rsplit(': ', 1)[1]
             verdict = 'unclear' if 'best model ever' in sentence else self.card_verdict
@@ -107,6 +108,7 @@ class PipelineTests(TestCase):
         self.assertEqual(draft.status, Draft.Status.READY)
         self.assertNotIn('best model ever', draft.body)  # cut by the card check
         self.assertIn('best model ever', draft.written_body)
+        self.assertEqual(draft.image_queries, ['circuit board', 'server room', 'data center'])  # cleaned, at most 3
 
         # one source on a hack: the card is fine, but a human must look
         hack_draft = hack.drafts.get()

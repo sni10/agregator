@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 
-from verification.card_check import Card
-
 from .common import ModelStep
 
 WRITE_SYSTEM = """You write an English news story about one event for a technology news site.
@@ -13,7 +11,10 @@ or an order in time that no fact states: put them in separate sentences. Neutral
 - summary: one sentence;
 - body: 150 to 250 words in 3 or 4 paragraphs separated by a blank line: what happened; the details; the
   background and reactions; what happens next. Skip a part the facts do not cover. With few facts write less:
-  never pad, never repeat a fact.
+  never pad, never repeat a fact;
+- image_queries: 2 or 3 searches for a stock photo above the story, 2 to 4 English words each, abstract: objects,
+  scenes, concepts ("cybersecurity lock server", "blockchain network abstract"). No names of people, companies,
+  products or brands, no logos, no text.
 Answer with JSON only."""
 
 
@@ -21,6 +22,7 @@ class CardAnswer(BaseModel):
     headline: str
     summary: str
     body: str
+    image_queries: list[str]
 
 
 def write_prompt(facts: list[str], sources: list[str]) -> str:
@@ -32,6 +34,5 @@ def write_prompt(facts: list[str], sources: list[str]) -> str:
 class CardWriter(ModelStep):
     max_tokens = 1024
 
-    def write(self, facts: list[str], sources: list[str]) -> Card:
-        answer = self.ask(WRITE_SYSTEM, write_prompt(facts, sources), CardAnswer).value
-        return Card(answer.headline, answer.summary, answer.body)
+    def write(self, facts: list[str], sources: list[str]) -> CardAnswer:
+        return self.ask(WRITE_SYSTEM, write_prompt(facts, sources), CardAnswer).value

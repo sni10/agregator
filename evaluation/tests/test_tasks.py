@@ -160,9 +160,11 @@ class CardCheckTaskTests(TaskTestCase):
         def card(user):
             if 'Model X' in user:
                 return {'headline': 'Model X is 40% cheaper', 'summary': 'Model X costs 40% less.',
-                        'body': 'Model X is 40% cheaper than Model W, its maker says. Model X is 40% cheaper to run.'}
+                        'body': 'Model X is 40% cheaper than Model W, its maker says. Model X is 40% cheaper to run.',
+                        'image_queries': ['chip']}
             return {'headline': 'Bridge loses $12 million', 'summary': 'Attackers drained $12 million.',
-                    'body': 'Attackers drained $12 million from the bridge. The bridge lost $12 million.'}
+                    'body': 'Attackers drained $12 million from the bridge. The bridge lost $12 million.',
+                    'image_queries': ['bridge']}
 
         run(WriteTask, card)
         data = {'traps': {'Model X release': 'Example Corp confirmed the price cut.'},
@@ -189,8 +191,9 @@ class WriteTaskTests(TaskTestCase):
     def test_flags_numbers_missing_from_facts_and_leaves_quality_to_a_human(self):
         def answer(user):
             if 'Model X' in user:
-                return {'headline': 'Model X is 40% cheaper', 'summary': 'Out now.', 'body': 'It costs 40% less.'}
-            return {'headline': 'Bridge loses $15 million', 'summary': 'Hack.', 'body': 'Attackers drained it.'}
+                return {'headline': 'Model X is 40% cheaper', 'summary': 'Out now.', 'body': 'It costs 40% less.',
+                        'image_queries': []}
+            return {'headline': 'Bridge loses $15 million', 'summary': 'Hack.', 'body': 'Attackers drained it.', 'image_queries': []}
 
         result, client = run(WriteTask, answer)
 
