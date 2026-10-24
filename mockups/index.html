@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>agregator — news</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>tailwind.config = { darkMode: 'media' };</script>
+  <script src="cards.js"></script>
+  <script src="common.js"></script>
+</head>
+<body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+  <div id="header"></div>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    <section id="lead" class="mb-10"></section>
+    <div class="mb-4 flex items-baseline justify-between">
+      <h2 id="feed-title" class="text-sm font-bold uppercase tracking-wider text-zinc-500">Latest</h2>
+      <button id="shuffle" class="text-sm text-violet-600 hover:underline dark:text-violet-400">Shuffle cards</button>
+    </div>
+    <section id="feed" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></section>
+  </main>
+
+  <footer class="border-t border-zinc-200 py-6 text-center text-xs text-zinc-500 dark:border-zinc-800">
+    Mockup · cards written by a local model from verified facts · each card links to its sources
+  </footer>
+
+  <script>
+    const tile = (card) => {
+      const cat = category(card);
+      return `<a href="card.html?id=${card.id}" class="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+        ${cover(card, 'h-36')}
+        <div class="flex flex-1 flex-col p-5">
+          <h3 class="text-lg font-bold leading-snug group-hover:text-violet-700 dark:group-hover:text-violet-300">${escapeHtml(card.headline)}</h3>
+          <p class="mt-2 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">${escapeHtml(card.summary)}</p>
+          <div class="mt-auto flex items-center gap-2 pt-4 text-xs text-zinc-500">
+            <span class="rounded-full px-2 py-0.5 font-medium ${cat.badge}">${cat.label}</span>
+            <span>${ago(card.published)}</span>
+            <span class="ml-auto">${card.sources.length} source${card.sources.length > 1 ? 's' : ''}</span>
+          </div>
+        </div>
+      </a>`;
+    };
+
+    const lead = (card) => `<a href="card.html?id=${card.id}" class="group grid overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:grid-cols-2">
+        ${cover(card, 'h-56 md:h-full min-h-[16rem]')}
+        <div class="p-6 md:p-10">
+          <span class="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">Top story</span>
+          <h1 class="mt-2 text-3xl font-black leading-tight tracking-tight group-hover:text-violet-700 dark:group-hover:text-violet-300 md:text-4xl">${escapeHtml(card.headline)}</h1>
+          <p class="mt-4 text-zinc-600 dark:text-zinc-400">${escapeHtml(card.summary)}</p>
+          <p class="mt-6 text-xs text-zinc-500">${ago(card.published)} · ${card.sources.map((s) => escapeHtml(s.name)).join(', ')}</p>
+        </div>
+      </a>`;
+
+    const render = () => {
+      const active = location.hash.slice(1) || 'all';
+      document.getElementById('header').innerHTML = header(active);
+      const cards = shuffle(CARDS.filter((c) => active === 'all' || c.category === active));
+      // the most covered story leads, the rest are shuffled
+      const top = [...cards].sort((a, b) => b.sources.length - a.sources.length)[0];
+      document.getElementById('lead').innerHTML = top ? lead(top) : '';
+      document.getElementById('feed').innerHTML = cards.filter((c) => c !== top).slice(0, 12).map(tile).join('');
+      document.getElementById('feed-title').textContent =
+        active === 'all' ? 'Latest' : `Latest in ${CATEGORIES[active].label}`;
+    };
+
+    window.addEventListener('hashchange', render);
+    document.getElementById('shuffle').addEventListener('click', render);
+    render();
+  </script>
+</body>
+</html>

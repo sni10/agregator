@@ -1,0 +1,67 @@
+ И К<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>agregator — story</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>tailwind.config = { darkMode: 'media' };</script>
+  <script src="cards.js"></script>
+  <script src="common.js"></script>
+</head>
+<body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+  <div id="header"></div>
+  <main id="story" class="mx-auto max-w-6xl px-4 py-8"></main>
+
+  <script>
+    const id = new URLSearchParams(location.search).get('id');
+    // no id: a random card, so the page works when opened directly
+    const card = CARDS.find((c) => c.id === id) || shuffle(CARDS)[0];
+    const cat = category(card);
+    document.title = `${card.headline} — agregator`;
+    document.getElementById('header').innerHTML = header(card.category);
+
+    const related = shuffle(CARDS.filter((c) => c.category === card.category && c !== card)).slice(0, 3);
+
+    document.getElementById('story').innerHTML = `
+      <div class="grid gap-10 lg:grid-cols-[1fr_18rem]">
+        <article class="min-w-0">
+          <a href="index.html#${card.category}" class="text-sm text-zinc-500 hover:underline">← ${cat.label}</a>
+          <h1 class="mt-3 text-3xl font-black leading-tight tracking-tight md:text-5xl">${escapeHtml(card.headline)}</h1>
+          <p class="mt-5 text-lg font-medium leading-relaxed text-zinc-700 dark:text-zinc-300 md:text-xl">${escapeHtml(card.summary)}</p>
+          <div class="mt-5 flex flex-wrap items-center gap-3 text-sm text-zinc-500">
+            <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold ${cat.badge}">${cat.label}</span>
+            <span>${ago(card.published)}</span>
+            <span>·</span>
+            <span>${card.sources.length} source${card.sources.length > 1 ? 's' : ''}</span>
+          </div>
+          <div class="mt-8 overflow-hidden rounded-2xl">${cover(card, 'h-64 md:h-80')}</div>
+          <div class="mt-8 space-y-5 text-[17px] leading-8 text-zinc-800 dark:text-zinc-200">
+            ${card.body.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}
+          </div>
+          <section class="mt-10 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-zinc-500">Sources</h2>
+            <ul class="mt-3 divide-y divide-zinc-100 dark:divide-zinc-800">
+              ${card.sources.map((s) => `<li class="py-3">
+                <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" class="group block">
+                  <span class="text-xs font-semibold text-violet-600 dark:text-violet-400">${escapeHtml(s.name)}</span>
+                  <span class="block text-sm text-zinc-700 group-hover:underline dark:text-zinc-300">${escapeHtml(s.title)} ↗</span>
+                </a></li>`).join('')}
+            </ul>
+            <p class="mt-4 text-xs text-zinc-500">Every sentence of this story was checked against facts quoted from these articles.</p>
+          </section>
+        </article>
+
+        <aside class="lg:pt-10">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-zinc-500">More in ${cat.label}</h2>
+          <div class="mt-4 space-y-4">
+            ${related.map((r) => `<a href="card.html?id=${r.id}" class="block rounded-xl border border-zinc-200 bg-white p-4 transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+              <h3 class="font-bold leading-snug">${escapeHtml(r.headline)}</h3>
+              <p class="mt-1 text-xs text-zinc-500">${ago(r.published)} · ${r.sources.length} source${r.sources.length > 1 ? 's' : ''}</p>
+            </a>`).join('')}
+          </div>
+        </aside>
+      </div>`;
+  </script>
+</body>
+</html>
