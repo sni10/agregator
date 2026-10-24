@@ -26,6 +26,7 @@ services:
       DB_HOST: db
       DB_PORT: "5432"
       LM_STUDIO_BASE_URL: http://host.docker.internal:1234/v1
+      PUBLISHING_URL: http://host.docker.internal:8002  # agregator-backend's dev compose
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

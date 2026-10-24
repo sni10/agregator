@@ -100,6 +100,17 @@ class PipelineSettings(Section):
     idle_ttl: int = Field(300, ge=60, description='Seconds before LM Studio unloads an idle model it was told to load')
 
 
+class PublishingSettings(Section):
+    """The site's publishing API (agregator-backend): ready drafts are sent there (publisher/)."""
+
+    model_config = SettingsConfigDict(env_prefix='PUBLISHING_')
+
+    url: str = 'http://localhost:8002'  # the backend's dev compose; the container reaches it at host.docker.internal
+    api_key: SecretStr = SecretStr('')  # the backend's PUBLISHING_API_KEY; empty -> nothing is sent
+    timeout: float = Field(30, gt=0, description='Seconds per request')
+    max_attempts: int = Field(10, ge=1, description='Then the job stays failed until resent from the admin')
+
+
 class AppSettings(Section):
     django: DjangoSettings
     db: DatabaseSettings
@@ -107,3 +118,4 @@ class AppSettings(Section):
     lm_studio: LMStudioSettings
     collector: CollectorSettings
     pipeline: PipelineSettings
+    publishing: PublishingSettings
