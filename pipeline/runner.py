@@ -3,17 +3,20 @@
 Phases by model, so each big model is loaded once per run:
 - worker (9B + embeddings): group articles into events; classify ready events; extract and verify their facts;
 - writer (27B): write a card for each event with enough verified facts;
-- worker again: check every sentence of each new card, set the draft's status.
+- worker again: check every sentence of each new card, set the draft's status;
+- no model: send ready and review drafts to the site (publisher/).
 Every step keeps its result in the DB: a run that stops halfway is continued by the next one.
 """
 from collections.abc import Callable
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
 from llm.client import LLMClient, LLMError
+from publisher import outbox
 from verification.card_check import Card, CardChecker, checks_to_json
 
 from .models import Draft, Event, Fact, PipelineRun
@@ -23,15 +26,17 @@ from .steps.facts import FactExtractor, FactVerifier, check_facts
 from .steps.grouping import Grouper, ungrouped_articles
 from .steps.write import CardWriter
 
-STAGES = ('group', 'facts', 'write', 'check')
+STAGES = ('group', 'facts', 'write', 'check', 'publish')
 MIN_INDEPENDENT_SOURCES = 2  # for high-risk events (spec §8 gates)
 MAX_IMAGE_QUERIES = 3
 
 
 class Pipeline:
     def __init__(self, client: LLMClient, lm_studio, config, manager: LmsModelManager | NoModelManager,
-                 progress: Callable[[str], None] = print):
+                 progress: Callable[[str], None] = print, publishing=None, events: list[int] | None = None):
         self.client = client
+        self.only = events  # rewrite just these events, whatever their status (pipeline --event)
+        self.publishing = publishing or settings.PUBLISHING
         self.config = config
         self.progress = progress
         self.manager = manager
@@ -61,6 +66,8 @@ class Pipeline:
     # --- worker: events --------------------------------------------------------------------------------------
 
     def group(self) -> dict:
+        if self.only:
+            return {'articles': 0, 'skipped': 'rewriting chosen events only'}
         articles = ungrouped_articles(timezone.now() - self.window)
         self.progress(f'{len(articles)} new articles')
         if not articles:
@@ -75,9 +82,13 @@ class Pipeline:
     def ready_events(self) -> list[Event]:
         """Waiting events that may get facts now: two sources, or one that waited long enough for others.
         The most covered first: they matter most and are the safest."""
+        sources = Count('articles__source', distinct=True)
+        if self.only:
+            return list(Event.objects.filter(pk__in=self.only).annotate(source_count=sources)
+                        .prefetch_related('articles__source'))
         now = timezone.now()
         events = (Event.objects.filter(status=Event.Status.COLLECTING, last_article_at__gte=now - self.window)
-                  .annotate(source_count=Count('articles__source', distinct=True))
+                  .annotate(source_count=sources)
                   .prefetch_related('articles__source').order_by('-source_count', '-last_article_at'))
         wait = now - timedelta(hours=self.config.single_source_wait_hours)
         ready = [e for e in events if e.source_count >= 2 or (e.first_published_at and e.first_published_at <= wait)]
@@ -137,7 +148,8 @@ class Pipeline:
     # --- writer: cards ---------------------------------------------------------------------------------------
 
     def write(self) -> dict:
-        events = list(Event.objects.filter(status=Event.Status.FACTS).prefetch_related('articles__source'))
+        events = Event.objects.filter(status=Event.Status.FACTS).prefetch_related('articles__source')
+        events = list(events.filter(pk__in=self.only) if self.only else events)
         self.progress(f'{len(events)} events to write')
         counts = {'events': len(events), 'written': 0, 'failed': 0}
         if not events:
@@ -204,6 +216,11 @@ class Pipeline:
             self.progress(f'{number:>3}/{len(drafts)} draft {draft.pk}: {draft.status.upper()}'
                           f'{f", {cut} sentences cut" if cut else ""} — {draft.headline[:70]}')
         return counts
+
+    # --- no model: the site ---------------------------------------------------------------------------------
+
+    def publish(self) -> dict:
+        return outbox.publish(self.publishing, self.progress)
 
     # ---------------------------------------------------------------------------------------------------------
 

@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
+from pydantic import SecretStr
 
 from llm.client import Completion, Usage
 from pipeline.models import Draft, Event, Fact
@@ -87,11 +88,13 @@ class PipelineTests(TestCase):
         make_article(coins, 'h1', 'Bridgy bridge drained', HACK, hours_ago=10)
         self.lm, self.manager = FakeLM(), FakeManager()
 
-    def run_pipeline(self, **config):
+    def run_pipeline(self, events=None, **config):
         lm_studio = settings.LM_STUDIO.model_copy(update={'worker_model': 'worker', 'writer_model': 'writer',
                                                           'embedding_model': 'embed'})
         config = settings.PIPELINE.model_copy(update=config)
-        return Pipeline(self.lm, lm_studio, config, self.manager, progress=lambda line: None).run()
+        publishing = settings.PUBLISHING.model_copy(update={'api_key': SecretStr('')})  # never the real site
+        return Pipeline(self.lm, lm_studio, config, self.manager, progress=lambda line: None,
+                        publishing=publishing, events=events).run()
 
     def test_articles_become_checked_drafts(self):
         run = self.run_pipeline()
@@ -114,6 +117,9 @@ class PipelineTests(TestCase):
         hack_draft = hack.drafts.get()
         self.assertEqual(hack_draft.status, Draft.Status.REVIEW)
         self.assertIn('high-risk event with 1 source', hack_draft.reasons[0])
+
+        # both are queued for the site; no key, so nothing is sent
+        self.assertEqual(run.stats['publish'], {'queued': 2, 'waiting': 2, 'sent': 0})
 
     def test_models_are_loaded_by_phase_and_each_step_uses_its_model(self):
         self.run_pipeline()
@@ -145,6 +151,18 @@ class PipelineTests(TestCase):
         self.run_pipeline()
 
         self.assertEqual(set(Draft.objects.values_list('status', flat=True)), {Draft.Status.REVIEW})
+
+    def test_a_chosen_event_is_written_again(self):
+        self.run_pipeline()
+        release = Event.objects.get(category='ai')
+        calls = len(self.lm.calls)
+
+        run = self.run_pipeline(events=[release.pk])
+
+        self.assertEqual(release.drafts.count(), 2)
+        self.assertEqual(Event.objects.get(category='crypto').drafts.count(), 1)  # the other one is left alone
+        self.assertEqual(run.stats['group'], {'articles': 0, 'skipped': 'rewriting chosen events only'})
+        self.assertGreater(len(self.lm.calls), calls)
 
     def test_a_late_article_joins_the_drafted_event(self):
         self.run_pipeline()

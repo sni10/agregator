@@ -409,7 +409,7 @@ agregator-front/                # VPS: Vue 3 SSR (по образцу image-gall
 | **0. Источники + прогон моделей** | источники, сборщик, контрольный набор, задачи прогона, выбор моделей | 3–4 дня | **готов** (прогоны 1–19, модели выбраны) |
 | 1. Backend core | `agregator-backend`: модели, publishing API, Admin, compose.prod, Caddy, CI, деплой на VPS | 3–5 дней | в работе: модели, publishing API, read API (лента, событие, категории, поиск), Admin с очередью review, dev compose, 19 тестов. Осталось: compose.prod + Caddy, CI, деплой, картинки, сущности, RSS/sitemap |
 | 2. Frontend core | `agregator-front`: лента, категории, страница события, SEO, микрокэш, CI | 4–6 дней | — |
-| 3. Сквозной срез | RSS → событие → факты → карточка → API → страница на сайте | 3–4 дня | — |
+| 3. Сквозной срез | RSS → событие → факты → карточка → API → страница на сайте | 3–4 дня | локально до API работает: `pipeline --stage publish` → `OutboundJob` (повторы, If-Match) → agregator-backend; 6 черновиков переданы, 5 в ленте, 1 в очереди review. Осталось: страница на сайте (фронт) |
 | 4. Event clustering | embeddings в pgvector, кандидаты, «одно ли событие», сущности | 5–7 дней | **готов**, кроме сущностей (`pipeline`: склейка embeddings + модель) |
 | 5. Evidence + verification | сверка фактов (§8), gates, очередь review | 7–10 дней | **готов**, кроме независимости источников (§8 п. 6) и очереди review на VPS |
 | 6. Hardening | расписание, retry, бэкапы, мониторинг, дайджесты, поиск, RSS/sitemap | 4–6 дней | — |
