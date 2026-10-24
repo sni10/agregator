@@ -1,0 +1,29 @@
+[
+  {"slug": "ars-technica", "name": "Ars Technica", "category": "it", "trust_tier": 2, "feed_url": "https://feeds.arstechnica.com/arstechnica/index", "site_url": "https://arstechnica.com"},
+  {"slug": "the-register", "name": "The Register", "category": "it", "trust_tier": 2, "feed_url": "https://www.theregister.com/headlines.atom", "site_url": "https://www.theregister.com"},
+  {"slug": "the-verge", "name": "The Verge", "category": "it", "trust_tier": 2, "feed_url": "https://www.theverge.com/rss/index.xml", "site_url": "https://www.theverge.com"},
+  {"slug": "techcrunch", "name": "TechCrunch", "category": "it", "trust_tier": 2, "feed_url": "https://techcrunch.com/feed/", "site_url": "https://techcrunch.com"},
+  {"slug": "lwn", "name": "LWN.net", "category": "it", "trust_tier": 2, "feed_url": "https://lwn.net/headlines/rss", "site_url": "https://lwn.net"},
+  {"slug": "github-blog", "name": "The GitHub Blog", "category": "it", "trust_tier": 1, "feed_url": "https://github.blog/feed/", "site_url": "https://github.blog"},
+  {"slug": "bleepingcomputer", "name": "BleepingComputer", "category": "it", "trust_tier": 2, "feed_url": "https://www.bleepingcomputer.com/feed/", "site_url": "https://www.bleepingcomputer.com"},
+  {"slug": "the-hacker-news", "name": "The Hacker News", "category": "it", "trust_tier": 2, "feed_url": "https://feeds.feedburner.com/TheHackersNews", "site_url": "https://thehackernews.com"},
+  {"slug": "krebs-on-security", "name": "Krebs on Security", "category": "it", "trust_tier": 2, "feed_url": "https://krebsonsecurity.com/feed/", "site_url": "https://krebsonsecurity.com"},
+  {"slug": "hn-frontpage", "name": "Hacker News: front page", "category": "it", "trust_tier": 3, "feed_url": "https://hnrss.org/frontpage", "site_url": "https://news.ycombinator.com"},
+
+  {"slug": "openai-news", "name": "OpenAI News", "category": "ai", "trust_tier": 1, "feed_url": "https://openai.com/news/rss.xml", "site_url": "https://openai.com/news"},
+  {"slug": "google-deepmind", "name": "Google DeepMind Blog", "category": "ai", "trust_tier": 1, "feed_url": "https://deepmind.google/blog/rss.xml", "site_url": "https://deepmind.google/discover/blog"},
+  {"slug": "google-ai", "name": "Google: AI", "category": "ai", "trust_tier": 1, "feed_url": "https://blog.google/technology/ai/rss/", "site_url": "https://blog.google/technology/ai"},
+  {"slug": "huggingface-blog", "name": "Hugging Face Blog", "category": "ai", "trust_tier": 1, "feed_url": "https://huggingface.co/blog/feed.xml", "site_url": "https://huggingface.co/blog"},
+  {"slug": "nvidia-blog", "name": "NVIDIA Blog", "category": "ai", "trust_tier": 1, "feed_url": "https://blogs.nvidia.com/feed/", "site_url": "https://blogs.nvidia.com"},
+  {"slug": "mit-tech-review-ai", "name": "MIT Technology Review: AI", "category": "ai", "trust_tier": 2, "feed_url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "site_url": "https://www.technologyreview.com"},
+  {"slug": "venturebeat-ai", "name": "VentureBeat: AI", "category": "ai", "trust_tier": 2, "feed_url": "https://venturebeat.com/category/ai/feed/", "site_url": "https://venturebeat.com"},
+  {"slug": "techcrunch-ai", "name": "TechCrunch: AI", "category": "ai", "trust_tier": 2, "feed_url": "https://techcrunch.com/category/artificial-intelligence/feed/", "site_url": "https://techcrunch.com"},
+  {"slug": "the-decoder", "name": "The Decoder", "category": "ai", "trust_tier": 2, "feed_url": "https://the-decoder.com/feed/", "site_url": "https://the-decoder.com"},
+
+  {"slug": "coindesk", "name": "CoinDesk", "category": "crypto", "trust_tier": 2, "feed_url": "https://www.coindesk.com/arc/outboundfeeds/rss/", "site_url": "https://www.coindesk.com"},
+  {"slug": "cointelegraph", "name": "Cointelegraph", "category": "crypto", "trust_tier": 2, "feed_url": "https://cointelegraph.com/rss", "site_url": "https://cointelegraph.com"},
+  {"slug": "decrypt", "name": "Decrypt", "category": "crypto", "trust_tier": 2, "feed_url": "https://decrypt.co/feed", "site_url": "https://decrypt.co"},
+  {"slug": "the-block", "full_text": false, "name": "The Block", "category": "crypto", "trust_tier": 2, "feed_url": "https://www.theblock.co/rss.xml", "site_url": "https://www.theblock.co"},
+  {"slug": "bitcoin-magazine", "name": "Bitcoin Magazine", "category": "crypto", "trust_tier": 2, "feed_url": "https://bitcoinmagazine.com/feed", "site_url": "https://bitcoinmagazine.com"},
+  {"slug": "ethereum-blog", "name": "Ethereum Foundation Blog", "category": "crypto", "trust_tier": 1, "feed_url": "https://blog.ethereum.org/feed.xml", "site_url": "https://blog.ethereum.org"}
+]

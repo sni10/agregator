@@ -1,0 +1,44 @@
+{
+  "_comment": "card_check test data. traps: per event (by title) a plausible sentence its facts do not support, with no number or name the facts lack, so only a meaning check catches it; the task inserts it into the event's card. known_bad: sentences of real cards (write run 1) that the facts do not support, as substrings; every other sentence of a real card counts as supported.",
+  "traps": {
+    "Bitcoin Core changes its security disclosure policy as AI makes bugs easy to find": "The new policy also extends the embargo for easily discoverable vulnerabilities until two weeks after the next major version ships.",
+    "Central Bank of Ireland fines Coinbase Ireland $3.6 million over safeguarding failures": "Coinbase Ireland disputed the findings and plans to appeal the fine at Ireland's High Court.",
+    "US spot Bitcoin ETFs extend inflow streak to about $1.07 billion": "Wednesday's inflow ended the three-day inflow streak.",
+    "Ethereum postpones Glamsterdam upgrade on Hoodi testnet over gas security risks": "Developers set early December as the new activation date for the Hoodi upgrade.",
+    "SoFi launches SOFIE, an FDIC-insured tokenized deposit paying 4.4%": "Like SOFIE, SoFiUSD is covered by FDIC insurance up to $250,000 per depositor.",
+    "HSBC launches RedCoin, its first Hong Kong dollar stablecoin, in PayMe": "RedCoin wallets are already available in the HSBC HK Mobile Banking App.",
+    "Interpol's Operation Serengeti III arrests 1,462 cybercrime suspects across Africa": "Most of the 1,462 arrests were made in Angola.",
+    "Senator Blumenthal probes Tether's reported $6.3 million deal with Bo Hines' firm": "Tether confirmed the $6.3 million deal with Nxum and said it was approved by its board.",
+    "Meta creates non-voting Class C stock to fund its AI buildout": "The Class C shares will give Mark Zuckerberg additional voting power.",
+    "New York AG seeks $1.37 billion from NovaTech founders over crypto Ponzi scheme": "The Petions were arrested after fleeing the US.",
+    "PHP releases emergency patches for two critical PHP2Shell RCE flaws": "PHP versions older than 8.1 will receive the fixes in a later release.",
+    "a16z renames its crypto fund a16z Frontier and widens its focus to AI": "a16z said it will stop investing in crypto and move the team to AI.",
+    "Dune launches real-time data feeds covering 200 onchain trading venues": "Dune said the feeds are free for all users.",
+    "Canva releases Craft, its first in-house image generation model": "Canva trained Craft mainly on stock photos rather than design templates.",
+    "Major US banks restrict AI agents that log in to customer accounts": "Morgan Stanley said rogue AI agents have already accessed customer accounts on its platforms.",
+    "Uber rolls out ChatGPT Work to all 30,000 employees": "Most of the pilot's early adopters were engineers.",
+    "Malaysia and Thailand join Singapore's BLOOM cross-border stablecoin initiative": "The Bank of Thailand launched BLOOM in October 2025.",
+    "OpenAI seeks up to $30 billion at a $1.25 trillion valuation": "OpenAI confirmed the terms of the round in a statement.",
+    "Fireblocks denies report of $2.5 billion acquisition talks with Visa": "Visa confirmed it is in advanced talks to acquire Fireblocks.",
+    "Circle shareholder sues Trump, World Liberty and Steve Witkoff over crypto deals": "Circle said it backs the lawsuit filed by its shareholder.",
+    "Quest Diagnostics confirms breach of its Quanum lab system exposed patient records": "Quest said no patient records were accessed.",
+    "Bank of Korea plans forex law amendment to regulate stablecoins as a means of payment": "The Bank of Korea has already published the draft text of the amendment.",
+    "SEC adds tokenization and super intelligence to its 2027 examination priorities": "Cryptocurrencies are listed as a standalone examination priority for fiscal 2027.",
+    "Arista patches VeloCloud Orchestrator zero-day exploited in attacks": "The flaw can be exploited without any login.",
+    "Initia halts its blockchain after exploit reportedly drains over $2.6 million": "Initia confirmed the losses and said the exploit was caused by a bridge bug.",
+    "eMudhra exits global TLS business after eight CA keys found trivially guessable": "Google decided on October 20 to stop trusting the emSign ECC Root CA - G3 in Chrome.",
+    "Google launches Gemini 4 Argon": "Gemini 4 Argon is available only to Google AI Ultra subscribers.",
+    "Amazon says PHP2Shell exploit attempts began four days before disclosure": "The first exploit attempt targeted Amazon's production servers.",
+    "LiteLLM 1.107.0 compromised in supply chain attack delivering credential stealer": "The malicious version was published only to Docker Hub.",
+    "Railway warns customers to rotate secrets after possible breach of environment variables": "Railway said all of its users were affected.",
+    "GitLab fixes CVSS 10.0 RCE flaw affecting releases back to 2014": "GitLab said the flaw has been exploited in attacks.",
+    "Moonshot AI releases Kimi K3.1 Pro, scoring 55 on the Artificial Analysis index": "Kimi K3.1 Pro ranks first on the Artificial Analysis Intelligence Index.",
+    "US spot Bitcoin ETFs post $635.6 million of net outflows on Thursday": "The outflows extended a three-day outflow streak.",
+    "PHP warns of another unpatched RCE, CVE-2026-115560, two days after PHP2Shell patches": "PHP is shipping an emergency release to fix CVE-2026-115560."
+  },
+  "known_bad": {
+    "US spot Bitcoin ETFs extend inflow streak to about $1.07 billion": [
+      "Ending Three-Day Streak"
+    ]
+  }
+}

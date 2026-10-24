@@ -1,0 +1,36 @@
+[project]
+name = "agregator"
+version = "0.1.0"
+description = "IT / AI / Crypto news intelligence: local pipeline (sources, LM Studio, evaluation)"
+requires-python = ">=3.14"
+dependencies = [
+    "django>=6.1.2",
+    "feedparser>=6.0.14",
+    "gunicorn>=26.2.0",
+    "httpx>=0.28.1",
+    "lxml>=6.1.3",
+    "numpy>=2.5.4",
+    "openai>=3.37.0",
+    "psycopg2-binary>=2.9.13",
+    "pydantic-settings>=2.15.0",
+    "trafilatura>=2.3.1",
+    "whitenoise>=6.12.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.coverage.run]
+branch = true
+source = ["config", "sources", "llm", "evaluation"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[dependency-groups]
+dev = [
+    "coverage>=7.16.2",
+    "unittest-xml-reporting>=4.0.0",
+]

@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.idea/
+staticfiles/
+reports/
+.coverage
+htmlcov/
+
+.claude/settings.local.json
+
+# local cheat sheet with credentials
+LOCAL.md
+.ruff_cache/

@@ -1,0 +1,13 @@
+.git
+.idea
+.junie
+.venv
+**/__pycache__
+*.pyc
+.env
+staticfiles
+reports
+.coverage
+htmlcov
+*.md
+.env*.example

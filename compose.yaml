@@ -1,0 +1,39 @@
+# Local pipeline stack: runs on the owner's PC only, never on the server. All settings come from .env (see .env.example).
+# LM Studio stays on Windows (it needs the GPU); the app reaches it at host.docker.internal.
+services:
+  db:
+    image: pgvector/pgvector:0.8.7-pg16-bookworm  # Postgres 16 + pgvector (event embeddings later)
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5433:5432"  # 5433: the image-gallery db already takes 5432; uv runs and the IDE connect here
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # .env holds the values for `uv run` on the host; inside the network these differ
+      DB_HOST: db
+      DB_PORT: "5432"
+      LM_STUDIO_BASE_URL: http://host.docker.internal:1234/v1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8001:8000"  # admin: http://localhost:8001/admin/
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
