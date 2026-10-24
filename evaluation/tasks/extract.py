@@ -16,7 +16,7 @@ class ExtractTask(Task):
 
     name = 'extract'
     schema = Answer
-    max_tokens = 2048
+    max_tokens = 3072  # 20 facts with quotes
 
     def cases(self):
         for event in events_with_articles():

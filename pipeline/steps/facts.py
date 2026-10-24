@@ -22,9 +22,10 @@ For every fact give:
 - quote: the exact sentence or phrase from that article that states it, copied verbatim;
 - kind: number | date | version | price | quote | general.
 Extract only what the articles state. Never add numbers, dates, names or conclusions that are not in the quote.
-Prefer concrete facts: who, what, when, how much, which version.
+Prefer concrete facts: who, what, when, how much, which version. Also take the background the articles give:
+what led to the event, earlier related events, reactions, what happens next.
 Keep in each statement who did it, who says it, and how it ended (tried, failed, planned, alleged), as the quote does.
-At most 12 facts. Answer with JSON only."""
+At most 20 facts. Answer with JSON only."""
 
 VERIFY_SYSTEM = """You check one statement against news articles.
 - supports: the articles state it (same numbers, dates, names and meaning);
@@ -33,7 +34,7 @@ VERIFY_SYSTEM = """You check one statement against news articles.
 Be strict: a statement with any detail the articles do not give is not supported.
 Answer with JSON only: verdict, and the exact quote from the articles your verdict rests on (empty if unclear)."""
 
-TEXT_BUDGET = 8000  # characters for all articles together (~2k tokens): fits a 9B model's context with room
+TEXT_BUDGET = 12000  # characters for all articles together (~3k tokens): with 20 facts out, fits 8k context
 CONTEXT_PARAGRAPHS = 1  # around the quote's paragraph, for the check
 
 
@@ -88,7 +89,7 @@ def quote_context(quote: str, article: Article) -> str:
 
 
 class FactExtractor(ModelStep):
-    max_tokens = 2048
+    max_tokens = 3072  # 20 facts with quotes
 
     def extract(self, title: str, articles: list[Article]) -> list[ExtractedFact]:
         per_article = TEXT_BUDGET // len(articles)

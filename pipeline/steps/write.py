@@ -4,14 +4,16 @@ from verification.card_check import Card
 
 from .common import ModelStep
 
-WRITE_SYSTEM = """You write a short English news card about one event for a technology news site.
+WRITE_SYSTEM = """You write an English news story about one event for a technology news site.
 Use only the verified facts given. Do not add numbers, dates, names, quotes, background or opinions that are not in
 the facts. If the facts leave something open, leave it open.
 Keep who did what, and with what result, as the facts say. Do not join two facts with a cause, a purpose, a means
 or an order in time that no fact states: put them in separate sentences. Neutral, concrete, no hype, no filler.
 - headline: up to 90 characters, factual;
 - summary: one sentence;
-- body: 3 to 5 sentences.
+- body: 150 to 250 words in 3 or 4 paragraphs separated by a blank line: what happened; the details; the
+  background and reactions; what happens next. Skip a part the facts do not cover. With few facts write less:
+  never pad, never repeat a fact.
 Answer with JSON only."""
 
 

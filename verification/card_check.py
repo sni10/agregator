@@ -40,6 +40,7 @@ ABBREVIATIONS = re.compile(
     r'jr|sr|vs|approx|est|e\.g|i\.e|a\.m|p\.m|u\.s|u\.k|u\.n|e\.u)|\b[a-z])\.$',
     re.IGNORECASE,
 )
+PARAGRAPH_BREAK = re.compile(r'\n\s*\n')
 # after the end mark and a closing quote or bracket, if any; before a capital or a digit
 SENTENCE_END = re.compile(r'(?:(?<=[.!?])|(?<=[.!?]["”’)]))\s+(?=["“‘(]?[A-Z0-9])')
 
@@ -101,8 +102,18 @@ def card_sentences(card: Card) -> list[Sentence]:
     return [
         Sentence('headline', card.headline.strip()),
         Sentence('summary', card.summary.strip()),
-        *(Sentence('body', text) for text in split_sentences(card.body)),
+        *(Sentence('body', text) for paragraph in paragraphs(card.body) for text in split_sentences(paragraph)),
     ]
+
+
+def paragraphs(body: str) -> list[str]:
+    return [p.strip() for p in PARAGRAPH_BREAK.split(body.strip()) if p.strip()]
+
+
+def without(body: str, cut: set[str]) -> str:
+    """The body without the cut sentences, paragraphs kept."""
+    kept = (' '.join(s for s in split_sentences(p) if s not in cut) for p in paragraphs(body))
+    return '\n\n'.join(p for p in kept if p)
 
 
 def code_problems(sentence: str, facts: list[str]) -> list[str]:
@@ -142,7 +153,7 @@ def judge(card: Card, checks: list[SentenceCheck], usage: Usage | None = None) -
         status = 'review'
     else:
         status = 'trimmed' if cut else 'passed'
-    trimmed = Card(card.headline, card.summary, ' '.join(kept))
+    trimmed = Card(card.headline, card.summary, without(card.body, {c.sentence.text for c in body if not c.ok}))
     return CardCheck(trimmed, status, checks, usage or Usage(0, 0, 0, 0.0))
 
 

@@ -88,6 +88,16 @@ class CardCheckerTests(SimpleTestCase):
         self.assertEqual(self.check(fact_ids=[])[0].status, 'review')
         self.assertEqual(self.check(fact_ids=[9])[0].status, 'review')
 
+    def test_paragraphs_survive_a_cut(self):
+        card = Card(CARD.headline, CARD.summary, 'The three-day inflow streak brought in about $1.07 billion. '
+                                                 'The inflow ended the streak.\n\nEthereum ETFs took in $14.9 million.'
+                                                 '\n\nUS spot Bitcoin ETFs took in $524.8 million on Wednesday.')
+        result, _ = self.check(card, rejects=['ended'])
+
+        self.assertEqual(result.card.body, 'The three-day inflow streak brought in about $1.07 billion.\n\n'
+                                           'Ethereum ETFs took in $14.9 million.\n\n'
+                                           'US spot Bitcoin ETFs took in $524.8 million on Wednesday.')
+
     def test_cutting_too_much_sends_the_card_to_review(self):
         result, _ = self.check(rejects=['streak'])  # 2 of 3 body sentences
 

@@ -3,7 +3,7 @@ import json
 from django.contrib import admin, messages
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.html import format_html, format_html_join
+from django.utils.html import format_html, format_html_join, linebreaks
 
 from sources.admin import ArticleAdmin
 from sources.models import Article
@@ -76,9 +76,9 @@ class EvalResultAdmin(admin.ModelAdmin):
             facts = format_html_join('', '<li>{}</li>', ((fact,) for fact in output['expected']))
             return format_html(
                 '<div style="max-width: 46em; font-size: 15px; line-height: 1.5">'
-                '<h2 style="margin: 0 0 .4em">{}</h2><p><b>{}</b></p><p>{}</p>'
+                '<h2 style="margin: 0 0 .4em">{}</h2><p><b>{}</b></p>{}'
                 '<details><summary>facts ({})</summary><ol>{}</ol></details></div>',
-                answer['headline'], answer['summary'], answer['body'], len(output['expected']), facts,
+                answer['headline'], answer['summary'], linebreaks(answer['body'], autoescape=True), len(output['expected']), facts,
             )
         rows = format_html_join('', '<tr><td>{}</td><td>{}</td><td style="{}">{}</td><td>{}</td></tr>', (
             ('✓' if not check['problems'] else '✗', check['part'],

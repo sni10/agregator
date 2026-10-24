@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.urls import reverse
-from django.utils.html import format_html, format_html_join
+from django.utils.html import format_html, format_html_join, linebreaks
 
 from .models import Draft, Event, Fact, PipelineRun
 
 CARD = ('<div style="max-width: 46em; font-size: 15px; line-height: 1.5">'
-        '<h2 style="margin: 0 0 .4em">{}</h2><p><b>{}</b></p><p>{}</p></div>')
+        '<h2 style="margin: 0 0 .4em">{}</h2><p><b>{}</b></p>{}</div>')
 
 
 class FactInline(admin.TabularInline):
@@ -79,7 +79,7 @@ class DraftAdmin(admin.ModelAdmin):
 
     @admin.display(description='card (as it would be published)')
     def card(self, draft):
-        return format_html(CARD, draft.headline, draft.summary, draft.body)
+        return format_html(CARD, draft.headline, draft.summary, linebreaks(draft.body, autoescape=True))
 
     @admin.display(description='why review')
     def reason_list(self, draft):
