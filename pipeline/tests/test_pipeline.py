@@ -93,8 +93,9 @@ class PipelineTests(TestCase):
                                                           'embedding_model': 'embed'})
         config = settings.PIPELINE.model_copy(update=config)
         publishing = settings.PUBLISHING.model_copy(update={'api_key': SecretStr('')})  # never the real site
+        pixabay = settings.PIXABAY.model_copy(update={'api_key': SecretStr('')})  # nor the real Pixabay
         return Pipeline(self.lm, lm_studio, config, self.manager, progress=lambda line: None,
-                        publishing=publishing, events=events).run()
+                        publishing=publishing, pixabay=pixabay, events=events).run()
 
     def test_articles_become_checked_drafts(self):
         run = self.run_pipeline()

@@ -111,6 +111,15 @@ class PublishingSettings(Section):
     max_attempts: int = Field(10, ge=1, description='Then the job stays failed until resent from the admin')
 
 
+class PixabaySettings(Section):
+    """Stock photos for drafts (pipeline stage `images`): https://pixabay.com/api/docs/ shows the key when logged in."""
+
+    model_config = SettingsConfigDict(env_prefix='PIXABAY_')
+
+    api_key: SecretStr = SecretStr('')  # empty -> the stage is skipped, stories get the category cover
+    timeout: float = Field(30, gt=0, description='Seconds per request')
+
+
 class AppSettings(Section):
     django: DjangoSettings
     db: DatabaseSettings
@@ -119,3 +128,4 @@ class AppSettings(Section):
     collector: CollectorSettings
     pipeline: PipelineSettings
     publishing: PublishingSettings
+    pixabay: PixabaySettings

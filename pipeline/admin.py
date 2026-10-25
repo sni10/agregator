@@ -57,7 +57,7 @@ class DraftAdmin(admin.ModelAdmin):
     list_display = ['headline', 'status', 'category', 'sources', 'cut', 'created_at']
     list_filter = ['status', 'event__category', 'event__high_risk']
     search_fields = ['headline', 'body']
-    readonly_fields = ['card', 'image_queries', 'reason_list', 'check_table', 'facts_list', 'event', 'written_body',
+    readonly_fields = ['card', 'photo', 'image_queries', 'reason_list', 'check_table', 'facts_list', 'event', 'written_body',
                        'writer_model', 'checker_model', 'created_at']
     fields = ['status', *readonly_fields]
     list_select_related = ['event']
@@ -80,6 +80,13 @@ class DraftAdmin(admin.ModelAdmin):
     @admin.display(description='card (as it would be published)')
     def card(self, draft):
         return format_html(CARD, draft.headline, draft.summary, linebreaks(draft.body, autoescape=True))
+
+    @admin.display(description='photo')
+    def photo(self, draft):
+        if draft.image is None:
+            return 'not searched yet' if not draft.image_searched else 'none found: the category cover'
+        return format_html('<a href="{}" target="_blank">{}</a> by {} (search “{}”)', draft.image.page_url,
+                           draft.image.external_id, draft.image.author, draft.image.query)
 
     @admin.display(description='why review')
     def reason_list(self, draft):

@@ -7,8 +7,8 @@ from pipeline.runner import STAGES, Pipeline
 
 
 class Command(BaseCommand):
-    help = ('New articles -> events -> facts -> card -> card check -> draft -> the site (admin: Pipeline -> Drafts, '
-            'Publisher -> Outbound jobs). '
+    help = ('New articles -> events -> facts -> card -> card check -> draft -> photo -> the site '
+            '(admin: Pipeline -> Drafts, Publisher -> Outbound jobs). '
             'Collect first (collect). Stops halfway safely: the next run continues.')
 
     def add_arguments(self, parser):
@@ -25,7 +25,7 @@ class Command(BaseCommand):
         if max_events:
             config = config.model_copy(update={'max_events': max_events})
         client = LMStudioClient.from_settings(settings.LM_STUDIO)
-        if set(stages or STAGES) != {'publish'}:  # publishing alone needs no LM Studio
+        if not set(stages or STAGES) <= {'images', 'publish'}:  # photos and publishing need no LM Studio
             try:
                 client.list_models()
             except LLMError as exc:

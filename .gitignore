@@ -4,6 +4,7 @@ __pycache__/
 .env
 .idea/
 staticfiles/
+media/
 reports/
 .coverage
 htmlcov/

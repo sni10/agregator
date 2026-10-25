@@ -23,6 +23,7 @@ class OutboundJob(models.Model):
     remote_status = models.CharField(max_length=20, blank=True, help_text="The story's status on the site")
     remote_revision = models.PositiveIntegerField(null=True, blank=True)
     remote_slug = models.CharField(max_length=120, blank=True)
+    remote_image = models.CharField(max_length=100, blank=True, help_text="The story's photo on the site")
     sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

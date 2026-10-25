@@ -4,15 +4,16 @@ Phases by model, so each big model is loaded once per run:
 - worker (9B + embeddings): group articles into events; classify ready events; extract and verify their facts;
 - writer (27B): write a card for each event with enough verified facts;
 - worker again: check every sentence of each new card, set the draft's status;
-- no model: send ready and review drafts to the site (publisher/).
+- no model: a stock photo for each checked draft (Pixabay), then ready and review drafts to the site (publisher/).
 Every step keeps its result in the DB: a run that stops halfway is continued by the next one.
 """
 from collections.abc import Callable
 from datetime import timedelta
 
+import httpx
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, OuterRef, Subquery
 from django.utils import timezone
 
 from llm.client import LLMClient, LLMError
@@ -24,19 +25,22 @@ from .models_manager import LoadSpec, LmsModelManager, NoModelManager
 from .steps.classify import EventClassifier
 from .steps.facts import FactExtractor, FactVerifier, check_facts
 from .steps.grouping import Grouper, ungrouped_articles
+from .steps.images import ImageError, ImagePicker, Pixabay
 from .steps.write import CardWriter
 
-STAGES = ('group', 'facts', 'write', 'check', 'publish')
+STAGES = ('group', 'facts', 'write', 'check', 'images', 'publish')
 MIN_INDEPENDENT_SOURCES = 2  # for high-risk events (spec §8 gates)
 MAX_IMAGE_QUERIES = 3
 
 
 class Pipeline:
     def __init__(self, client: LLMClient, lm_studio, config, manager: LmsModelManager | NoModelManager,
-                 progress: Callable[[str], None] = print, publishing=None, events: list[int] | None = None):
+                 progress: Callable[[str], None] = print, publishing=None, pixabay=None,
+                 events: list[int] | None = None):
         self.client = client
         self.only = events  # rewrite just these events, whatever their status (pipeline --event)
         self.publishing = publishing or settings.PUBLISHING
+        self.pixabay = pixabay or settings.PIXABAY
         self.config = config
         self.progress = progress
         self.manager = manager
@@ -217,7 +221,36 @@ class Pipeline:
                           f'{f", {cut} sentences cut" if cut else ""} — {draft.headline[:70]}')
         return counts
 
-    # --- no model: the site ---------------------------------------------------------------------------------
+    # --- no model: photos and the site ----------------------------------------------------------------------
+
+    def images(self) -> dict:
+        """A photo for the newest checked draft of each event; drafts already on the site get theirs sent too."""
+        newest = Draft.objects.filter(event=OuterRef('event')).order_by('-id').values('id')[:1]
+        drafts = (Draft.objects.filter(status__in=[Draft.Status.READY, Draft.Status.REVIEW], image__isnull=True,
+                                       image_searched=False, id=Subquery(newest)).select_related('event'))
+        drafts = list(drafts.filter(event__in=self.only) if self.only else drafts)
+        self.progress(f'{len(drafts)} drafts without a photo')
+        counts = {'drafts': len(drafts), 'found': 0, 'none': 0, 'failed': 0}
+        api_key = self.pixabay.api_key.get_secret_value()
+        if not drafts or not api_key:
+            if drafts:
+                self.progress('PIXABAY_API_KEY is empty: no photos')
+            return counts
+        with httpx.Client(timeout=self.pixabay.timeout, follow_redirects=True) as http:
+            picker = ImagePicker(Pixabay(http, api_key), settings.MEDIA_ROOT)
+            for number, draft in enumerate(drafts, 1):
+                prefix = f'{number:>3}/{len(drafts)} draft {draft.pk}'
+                try:
+                    draft.image = picker.pick(draft)
+                except ImageError as exc:
+                    counts['failed'] += 1
+                    self.progress(f'{prefix} FAILED {exc} (tried again next run)')
+                    continue
+                draft.image_searched = True
+                draft.save(update_fields=['image', 'image_searched'])
+                counts['found' if draft.image else 'none'] += 1
+                self.progress(f'{prefix}: {draft.image or "none found: the category cover"} — {draft.headline[:60]}')
+        return counts
 
     def publish(self) -> dict:
         return outbox.publish(self.publishing, self.progress)

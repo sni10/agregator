@@ -1,11 +1,15 @@
 """Send the outbox to the site. A story is created on the first send and updated (If-Match) afterwards: a second
-draft of the same event, or a retry after a timeout that had in fact gone through."""
+draft of the same event, or a retry after a timeout that had in fact gone through. Then its photo, if it has a new one."""
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
+from pathlib import Path
 
 import httpx
+from django.conf import settings
 from django.utils import timezone
+
+from pipeline.models import StockImage
 
 from .models import OutboundJob
 
@@ -36,9 +40,18 @@ class PublishingClient:
         return self._call('PUT', f'{url}/{external_id}', {**headers, 'If-Match': f'"{current["revision"]}"'},
                           json=payload)
 
-    def _call(self, method, url, headers, json=None, allow_404=False) -> dict | None:
+    def send_image(self, external_id: str, image: StockImage, request_id: str) -> dict:
+        """The story's state after setting its photo (multipart: the file and its credit)."""
+        path = Path(settings.MEDIA_ROOT) / image.file
+        data = {'external_id': image.external_id, 'source': image.source, 'author': image.author,
+                'author_url': image.author_url, 'page_url': image.page_url}
+        return self._call('PUT', f'{self.base_url}/publishing/publications/{external_id}/image',
+                          {**self.headers, 'X-Request-Id': request_id}, data=data,
+                          files={'file': (path.name, path.read_bytes())})
+
+    def _call(self, method, url, headers, json=None, allow_404=False, **content) -> dict | None:
         try:
-            response = self.http.request(method, url, headers=headers, json=json)
+            response = self.http.request(method, url, headers=headers, json=json, **content)
         except httpx.TransportError as exc:
             raise SendError(f'{method} {url}: {type(exc).__name__}: {exc}', retry=True) from exc
         if allow_404 and response.status_code == 404:
@@ -80,7 +93,31 @@ def send_due(client: PublishingClient, max_attempts: int, progress: Callable[[st
         else:
             job.status, job.sent_at, job.last_error = OutboundJob.Status.SENT, now, ''
             job.remote_status, job.remote_revision, job.remote_slug = state['status'], state['revision'], state['slug']
+            job.remote_image = state.get('image') or ''
             stats.sent += 1
             progress(f'  {job.external_id}: {state["status"]} r{state["revision"]} /{state["slug"]}')
         job.save()
+    return stats
+
+
+def send_images(client: PublishingClient, progress: Callable[[str], None] = lambda line: None) -> SendStats:
+    """Sent stories whose draft has a photo the site does not show yet. A failure is tried again next run."""
+    stats = SendStats()
+    jobs = (OutboundJob.objects.filter(status=OutboundJob.Status.SENT, draft__image__isnull=False)
+            .select_related('draft__image').order_by('id'))
+    for job in jobs:
+        image = job.draft.image
+        if job.remote_image == image.external_id:
+            continue
+        try:
+            state = client.send_image(job.external_id, image, request_id=f'job-{job.pk}-image')
+        except (SendError, OSError) as exc:
+            stats.failed += 1
+            stats.errors.append(str(exc))
+            progress(f'  {job.external_id}: photo FAILED — {exc}')
+            continue
+        job.remote_image = state.get('image') or ''
+        job.save(update_fields=['remote_image', 'updated_at'])
+        stats.sent += 1
+        progress(f'  {job.external_id}: photo {image.external_id} by {image.author}')
     return stats

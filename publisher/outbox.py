@@ -7,7 +7,7 @@ from pipeline.models import Draft
 
 from .models import OutboundJob
 from .payload import build_payload, external_id
-from .sender import PublishingClient, send_due
+from .sender import PublishingClient, send_due, send_images
 
 
 def enqueue() -> int:
@@ -28,5 +28,8 @@ def publish(config, progress: Callable[[str], None] = lambda line: None) -> dict
         progress('PUBLISHING_API_KEY is empty: nothing sent')
         return {'queued': queued, 'waiting': waiting, 'sent': 0}
     with httpx.Client(timeout=config.timeout) as http:
-        stats = send_due(PublishingClient(http, config.url, api_key), config.max_attempts, progress)
-    return {'queued': queued, 'sent': stats.sent, 'retry': stats.retry, 'failed': stats.failed}
+        client = PublishingClient(http, config.url, api_key)
+        stats = send_due(client, config.max_attempts, progress)
+        photos = send_images(client, progress)
+    return {'queued': queued, 'sent': stats.sent, 'retry': stats.retry, 'failed': stats.failed,
+            'photos': photos.sent, 'photos_failed': photos.failed}

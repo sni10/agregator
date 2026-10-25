@@ -69,6 +69,22 @@ class Fact(models.Model):
         return self.statement
 
 
+class StockImage(models.Model):
+    """A stock photo picked for an event's drafts (stage `images`), kept in MEDIA_ROOT until it is on the site."""
+
+    external_id = models.CharField(max_length=100, unique=True, help_text='pixabay-<id>: never used for two events')
+    source = models.CharField(max_length=20)
+    file = models.CharField(max_length=300, help_text='Relative to MEDIA_ROOT')
+    author = models.CharField(max_length=200)
+    author_url = models.URLField(max_length=500, blank=True)
+    page_url = models.URLField(max_length=500)
+    query = models.CharField(max_length=200, help_text='The search that found it')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.external_id
+
+
 class Draft(models.Model):
     """A news card for an event, after the checks. Published from here once the server side exists."""
 
@@ -85,6 +101,8 @@ class Draft(models.Model):
     written_body = models.TextField(help_text='As the writer wrote it')
     image_queries = models.JSONField(default=list, blank=True,
                                      help_text='Stock photo searches from the writer: abstract, no names or brands')
+    image = models.ForeignKey(StockImage, null=True, blank=True, on_delete=models.SET_NULL, related_name='drafts')
+    image_searched = models.BooleanField(default=False, help_text='Searched once: none found -> the category cover')
     status = models.CharField(max_length=20, choices=Status, db_index=True)
     reasons = models.JSONField(default=list, blank=True, help_text='Why it needs review or is blocked')
     checks = models.JSONField(default=list, blank=True, help_text='Card check: every sentence with its verdict')

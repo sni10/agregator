@@ -97,9 +97,12 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / ENV.static.root
 
+MEDIA_ROOT = BASE_DIR / 'media'  # downloaded stock photos, until they are on the site
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LM_STUDIO = ENV.lm_studio
 COLLECTOR = ENV.collector
 PIPELINE = ENV.pipeline
 PUBLISHING = ENV.publishing
+PIXABAY = ENV.pixabay

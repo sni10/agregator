@@ -1,14 +1,18 @@
 import json
+import re
+import shutil
+import tempfile
 from datetime import timedelta
+from pathlib import Path
 
 import httpx
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from pipeline.models import Draft, Event, Fact
+from pipeline.models import Draft, Event, Fact, StockImage
 from publisher.models import OutboundJob
 from publisher.outbox import enqueue
-from publisher.sender import PublishingClient, send_due
+from publisher.sender import PublishingClient, send_due, send_images
 from sources.models import Article, Category, Source
 
 
@@ -22,6 +26,10 @@ class FakeSite:
         self.requests.append((request.method, request.url.path, dict(request.headers)))
         if self.fail_with:
             return httpx.Response(self.fail_with, json={'detail': 'nope'})
+        if request.url.path.endswith('/image'):  # multipart: the file and the photo's external_id
+            story = self.stories[request.url.path.split('/')[-2]]
+            story['image'] = re.search(rb'name="external_id"\r\n\r\n([^\r]+)', request.content)[1].decode()
+            return httpx.Response(200, json=story)
         external_id = request.url.path.rsplit('/', 1)[1]
         if request.method == 'GET':
             story = self.stories.get(external_id)
@@ -29,7 +37,7 @@ class FakeSite:
         payload = json.loads(request.content)
         if request.method == 'POST':
             story = {'external_id': payload['external_id'], 'slug': 'a-story', 'status': payload['status'],
-                     'revision': 1}
+                     'revision': 1, 'image': None}
             self.stories[payload['external_id']] = story
             return httpx.Response(201, json=story)
         story = self.stories[external_id]
@@ -60,6 +68,10 @@ class PublisherTests(TestCase):
     def send(self, site, max_attempts=10, now=None):
         with httpx.Client(transport=httpx.MockTransport(site)) as http:
             return send_due(PublishingClient(http, 'http://site', 'key'), max_attempts, now=now)
+
+    def send_photos(self, site):
+        with httpx.Client(transport=httpx.MockTransport(site)) as http:
+            return send_images(PublishingClient(http, 'http://site', 'key'))
 
     def test_ready_and_review_drafts_are_queued_once_with_the_site_payload(self):
         Draft.objects.create(event=self.event, headline='h', summary='s', body='b', written_body='b',
@@ -119,3 +131,22 @@ class PublisherTests(TestCase):
         stats = self.send(down)
 
         self.assertEqual((stats.retry, OutboundJob.objects.get().status), (1, 'pending'))
+
+    def test_a_photo_is_sent_once_after_its_story(self):
+        media = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, media, ignore_errors=True)
+        (media / 'p.jpg').write_bytes(b'jpeg')
+        self.draft.image = StockImage.objects.create(external_id='pixabay-9', source='pixabay', file='p.jpg',
+                                                     author='Josch13', page_url='https://pixabay.com/9', query='q')
+        self.draft.save()
+        site = FakeSite()
+        enqueue()
+
+        with override_settings(MEDIA_ROOT=media):
+            self.assertEqual(self.send_photos(site).sent, 0)  # the story is not on the site yet
+            self.send(site)
+            first, second = self.send_photos(site), self.send_photos(site)
+
+        self.assertEqual((first.sent, second.sent), (1, 0))
+        self.assertEqual(OutboundJob.objects.get().remote_image, 'pixabay-9')
+        self.assertEqual(site.requests[-1][:2], ('PUT', f'/publishing/publications/event-{self.event.pk}/image'))
