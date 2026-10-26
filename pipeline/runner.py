@@ -164,7 +164,7 @@ class Pipeline:
             facts = list(event.facts.filter(status=Fact.Status.VERIFIED))
             sources = [f'{a.source.name}: {a.title}' for a in event.articles.all()]
             try:
-                card = writer.write([fact.statement for fact in facts], sources)
+                card = writer.write([fact.statement for fact in facts], sources, len(event.sources))
             except LLMError as exc:
                 self._fail(event, exc)
                 counts['failed'] += 1

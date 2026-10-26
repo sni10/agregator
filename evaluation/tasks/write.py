@@ -13,17 +13,21 @@ class WriteTask(Task):
     name = 'write'
     schema = Answer
     role = 'writer'
-    max_tokens = 1024
+    max_tokens = 2048
 
     def cases(self):
         for event in events_with_articles():
             facts = [fact.statement for fact in event.facts.all()]
             if facts:
-                sources = [f'{a.source.name}: {a.title}' for a in event.articles.all()]
-                yield Case(key=f'event {event.pk}', expected=facts, event=event, data={'sources': sources})
+                articles = event.articles.all()
+                sources = [f'{a.source.name}: {a.title}' for a in articles]
+                sites = len({a.source_id for a in articles})
+                yield Case(key=f'event {event.pk}', expected=facts, event=event,
+                           data={'sources': sources, 'sites': sites})
 
     def ask(self, case):
-        return self.complete_json(SYSTEM, write_prompt(case.expected, case.data['sources']), Answer)
+        prompt = write_prompt(case.expected, case.data['sources'], case.data.get('sites'))
+        return self.complete_json(SYSTEM, prompt, Answer)
 
     def score(self, case, completion):
         card = completion.value
