@@ -7,7 +7,8 @@ class BodyLengthTests(SimpleTestCase):
     def test_grows_with_sites_and_facts(self):
         self.assertEqual(body_length(1, 5), '120 to 180 words in 2 or 3 paragraphs')
         self.assertEqual(body_length(3, 7), '250 to 400 words in 3 to 5 paragraphs')
-        self.assertEqual(body_length(8, 15), '400 to 600 words in 5 to 7 paragraphs')
+        self.assertEqual(body_length(8, 15), '250 to 400 words in 3 to 5 paragraphs')
+        self.assertEqual(body_length(6, 16), '400 to 600 words in 5 to 7 paragraphs')
 
     def test_many_sites_with_few_facts_stay_short(self):
         self.assertEqual(body_length(8, 4), '120 to 180 words in 2 or 3 paragraphs')
