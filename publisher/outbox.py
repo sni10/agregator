@@ -7,7 +7,7 @@ from pipeline.models import Draft
 
 from .models import OutboundJob
 from .payload import build_payload, external_id
-from .sender import PublishingClient, send_due, send_images
+from .sender import PublishingClient, send_due, send_images, send_tags
 
 
 def enqueue() -> int:
@@ -31,5 +31,6 @@ def publish(config, progress: Callable[[str], None] = lambda line: None) -> dict
         client = PublishingClient(http, config.url, api_key)
         stats = send_due(client, config.max_attempts, progress)
         photos = send_images(client, progress)
+        tags = send_tags(client, progress)
     return {'queued': queued, 'sent': stats.sent, 'retry': stats.retry, 'failed': stats.failed,
-            'photos': photos.sent, 'photos_failed': photos.failed}
+            'photos': photos.sent, 'photos_failed': photos.failed, 'tags': tags.sent, 'tags_failed': tags.failed}

@@ -54,6 +54,9 @@ class FakeLM:
                       'body': 'Model X is 40% cheaper than Model W. It supports 12 languages. '
                               'The company did not give a release date for Europe. It is the best model ever.',
                       'image_queries': [' circuit board ', '', 'server room', 'data center', 'chip']})
+        elif step.startswith('You tag a story'):
+            hack = 'Bridgy' in user.split('Story:', 1)[1]  # the tags in use may name it too
+            value = {'tags': ['Bridgy', 'Bridge hacks'] if hack else ['Example Corp', 'AI', 'Model X', 'model-x']}
         elif step.startswith('You check one sentence'):
             sentence = user.rsplit(': ', 1)[1]
             verdict = 'unclear' if 'best model ever' in sentence else self.card_verdict
@@ -113,6 +116,7 @@ class PipelineTests(TestCase):
         self.assertNotIn('best model ever', draft.body)  # cut by the card check
         self.assertIn('best model ever', draft.written_body)
         self.assertEqual(draft.image_queries, ['circuit board', 'server room', 'data center'])  # cleaned, at most 3
+        self.assertEqual(draft.tags, ['Example Corp', 'Model X'])  # no "AI", one spelling of Model X
 
         # one source on a hack: the card is fine, but a human must look
         hack_draft = hack.drafts.get()
@@ -125,7 +129,8 @@ class PipelineTests(TestCase):
     def test_models_are_loaded_by_phase_and_each_step_uses_its_model(self):
         self.run_pipeline()
 
-        self.assertEqual(self.manager.used, [('worker', 'embed'), ('worker', 'embed'), ('writer',), ('worker', 'embed')])
+        worker = ('worker', 'embed')
+        self.assertEqual(self.manager.used, [worker, worker, ('writer',), worker, worker])  # check, then tags
         writing = {model for model, step in self.lm.calls if step.startswith('You write')}
         self.assertEqual(writing, {'writer'})
         self.assertNotIn('writer', {model for model, step in self.lm.calls if not step.startswith('You write')})

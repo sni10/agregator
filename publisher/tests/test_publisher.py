@@ -12,7 +12,7 @@ from django.utils import timezone
 from pipeline.models import Draft, Event, Fact, StockImage
 from publisher.models import OutboundJob
 from publisher.outbox import enqueue
-from publisher.sender import PublishingClient, send_due, send_images
+from publisher.sender import PublishingClient, send_due, send_images, send_tags
 from sources.models import Article, Category, Source
 
 
@@ -29,6 +29,10 @@ class FakeSite:
         if request.url.path.endswith('/image'):  # multipart: the file and the photo's external_id
             story = self.stories[request.url.path.split('/')[-2]]
             story['image'] = re.search(rb'name="external_id"\r\n\r\n([^\r]+)', request.content)[1].decode()
+            return httpx.Response(200, json=story)
+        if request.url.path.endswith('/tags'):
+            story = self.stories[request.url.path.split('/')[-2]]
+            story['tags'] = json.loads(request.content)['tags']
             return httpx.Response(200, json=story)
         external_id = request.url.path.rsplit('/', 1)[1]
         if request.method == 'GET':
@@ -150,3 +154,22 @@ class PublisherTests(TestCase):
         self.assertEqual((first.sent, second.sent), (1, 0))
         self.assertEqual(OutboundJob.objects.get().remote_image, 'pixabay-9')
         self.assertEqual(site.requests[-1][:2], ('PUT', f'/publishing/publications/event-{self.event.pk}/image'))
+
+    def test_tags_are_sent_after_the_story_and_again_when_they_change(self):
+        site = FakeSite()
+        enqueue()
+
+        def send():
+            with httpx.Client(transport=httpx.MockTransport(site)) as http:
+                return send_tags(PublishingClient(http, 'http://site', 'key')).sent
+
+        self.send(site)
+        self.assertEqual(send(), 0)  # not tagged yet
+        self.draft.tags = ['Bitcoin ETFs', 'BlackRock']
+        self.draft.save()
+        self.assertEqual((send(), send()), (1, 0))
+        self.assertEqual(site.stories[f'event-{self.event.pk}']['tags'], ['Bitcoin ETFs', 'BlackRock'])
+        self.draft.tags = ['Bitcoin ETFs']
+        self.draft.save()
+        self.assertEqual(send(), 1)
+        self.assertEqual(OutboundJob.objects.get().remote_tags, ['Bitcoin ETFs'])

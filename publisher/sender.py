@@ -49,6 +49,11 @@ class PublishingClient:
                           {**self.headers, 'X-Request-Id': request_id}, data=data,
                           files={'file': (path.name, path.read_bytes())})
 
+    def send_tags(self, external_id: str, tags: list[str], request_id: str) -> dict:
+        """The story's state after replacing its tags."""
+        return self._call('PUT', f'{self.base_url}/publishing/publications/{external_id}/tags',
+                          {**self.headers, 'X-Request-Id': request_id}, json={'tags': tags})
+
     def _call(self, method, url, headers, json=None, allow_404=False, **content) -> dict | None:
         try:
             response = self.http.request(method, url, headers=headers, json=json, **content)
@@ -120,4 +125,27 @@ def send_images(client: PublishingClient, progress: Callable[[str], None] = lamb
         job.save(update_fields=['remote_image', 'updated_at'])
         stats.sent += 1
         progress(f'  {job.external_id}: photo {image.external_id} by {image.author}')
+    return stats
+
+
+def send_tags(client: PublishingClient, progress: Callable[[str], None] = lambda line: None) -> SendStats:
+    """Sent stories whose draft has tags the site does not have yet. A failure is tried again next run."""
+    stats = SendStats()
+    jobs = (OutboundJob.objects.filter(status=OutboundJob.Status.SENT, draft__tags__isnull=False)
+            .select_related('draft').order_by('id'))
+    for job in jobs:
+        tags = job.draft.tags
+        if job.remote_tags == tags:
+            continue
+        try:
+            state = client.send_tags(job.external_id, tags, request_id=f'job-{job.pk}-tags')
+        except SendError as exc:
+            stats.failed += 1
+            stats.errors.append(str(exc))
+            progress(f'  {job.external_id}: tags FAILED — {exc}')
+            continue
+        job.remote_tags = tags  # as sent: the site may spell an existing tag its own way
+        job.save(update_fields=['remote_tags', 'updated_at'])
+        stats.sent += 1
+        progress(f'  {job.external_id}: tags {", ".join(state.get("tags") or tags) or "none"}')
     return stats

@@ -3,10 +3,11 @@
 Phases by model, so each big model is loaded once per run:
 - worker (9B + embeddings): group articles into events; classify ready events; extract and verify their facts;
 - writer (27B): write a card for each event with enough verified facts;
-- worker again: check every sentence of each new card, set the draft's status;
+- worker again: check every sentence of each new card, set the draft's status; tag the checked drafts;
 - no model: a stock photo for each checked draft (Pixabay), then ready and review drafts to the site (publisher/).
 Every step keeps its result in the DB: a run that stops halfway is continued by the next one.
 """
+from collections import Counter
 from collections.abc import Callable
 from datetime import timedelta
 
@@ -26,11 +27,13 @@ from .steps.classify import EventClassifier
 from .steps.facts import FactExtractor, FactVerifier, check_facts
 from .steps.grouping import Grouper, ungrouped_articles
 from .steps.images import ImageError, ImagePicker, Pixabay
+from .steps.tags import Tagger, key
 from .steps.write import CardWriter
 
-STAGES = ('group', 'facts', 'write', 'check', 'images', 'publish')
+STAGES = ('group', 'facts', 'write', 'check', 'tags', 'images', 'publish')
 MIN_INDEPENDENT_SOURCES = 2  # for high-risk events (spec §8 gates)
 MAX_IMAGE_QUERIES = 3
+KNOWN_TAGS = 300  # the most used tags shown to the tagger, to be reused
 
 
 class Pipeline:
@@ -221,14 +224,47 @@ class Pipeline:
                           f'{f", {cut} sentences cut" if cut else ""} — {draft.headline[:70]}')
         return counts
 
+    def tags(self) -> dict:
+        """Tags for the newest checked draft of each event, stories already on the site included: the site gets
+        them with the next `publish`."""
+        drafts = list(self._newest_checked().filter(tags__isnull=True))
+        self.progress(f'{len(drafts)} drafts to tag')
+        counts = {'drafts': len(drafts), 'tagged': 0, 'failed': 0, 'new_tags': 0}
+        if not drafts:
+            return counts
+        used = Counter(tag for tags in Draft.objects.filter(tags__isnull=False).values_list('tags', flat=True)
+                       for tag in tags)
+        self.manager.use(*self.worker)
+        tagger = Tagger(self.client, self.worker_model)
+        for number, draft in enumerate(drafts, 1):
+            known = [tag for tag, _ in used.most_common(KNOWN_TAGS)]
+            try:
+                draft.tags = tagger.tag(draft.headline, draft.summary, draft.body, known)
+            except LLMError as exc:
+                counts['failed'] += 1
+                self.progress(f'{number:>3}/{len(drafts)} draft {draft.pk} FAILED {exc} (tagged again next run)')
+                continue
+            draft.save(update_fields=['tags'])
+            known_keys = {key(tag) for tag in used}
+            counts['new_tags'] += sum(key(tag) not in known_keys for tag in draft.tags)
+            used.update(draft.tags)
+            counts['tagged'] += 1
+            self.progress(f'{number:>3}/{len(drafts)} draft {draft.pk}: {", ".join(draft.tags) or "no tags"}'
+                          f' — {draft.headline[:50]}')
+        return counts
+
+    def _newest_checked(self):
+        """The newest draft of each event, if it is ready or in review (chosen events only with --event)."""
+        newest = Draft.objects.filter(event=OuterRef('event')).order_by('-id').values('id')[:1]
+        drafts = Draft.objects.filter(status__in=[Draft.Status.READY, Draft.Status.REVIEW], id=Subquery(newest))
+        return drafts.filter(event__in=self.only) if self.only else drafts
+
     # --- no model: photos and the site ----------------------------------------------------------------------
 
     def images(self) -> dict:
         """A photo for the newest checked draft of each event; drafts already on the site get theirs sent too."""
-        newest = Draft.objects.filter(event=OuterRef('event')).order_by('-id').values('id')[:1]
-        drafts = (Draft.objects.filter(status__in=[Draft.Status.READY, Draft.Status.REVIEW], image__isnull=True,
-                                       image_searched=False, id=Subquery(newest)).select_related('event'))
-        drafts = list(drafts.filter(event__in=self.only) if self.only else drafts)
+        drafts = list(self._newest_checked().filter(image__isnull=True, image_searched=False)
+                      .select_related('event'))
         self.progress(f'{len(drafts)} drafts without a photo')
         counts = {'drafts': len(drafts), 'found': 0, 'none': 0, 'failed': 0}
         api_key = self.pixabay.api_key.get_secret_value()

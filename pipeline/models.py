@@ -102,6 +102,7 @@ class Draft(models.Model):
     image_queries = models.JSONField(default=list, blank=True,
                                      help_text='Stock photo searches from the writer: abstract, no names or brands')
     image = models.ForeignKey(StockImage, null=True, blank=True, on_delete=models.SET_NULL, related_name='drafts')
+    tags = models.JSONField(null=True, blank=True, help_text='Stage `tags`: None until tagged')
     image_searched = models.BooleanField(default=False, help_text='Searched once: none found -> the category cover')
     status = models.CharField(max_length=20, choices=Status, db_index=True)
     reasons = models.JSONField(default=list, blank=True, help_text='Why it needs review or is blocked')

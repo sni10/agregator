@@ -15,7 +15,8 @@ class OutboundJobAdmin(admin.ModelAdmin):
     list_filter = ['status', 'remote_status']
     search_fields = ['external_id', 'draft__headline']
     readonly_fields = ['draft_link', 'external_id', 'status', 'attempts', 'next_attempt_at', 'last_error',
-                       'remote_status', 'remote_revision', 'remote_slug', 'sent_at', 'payload', 'created_at']
+                       'remote_status', 'remote_revision', 'remote_slug', 'remote_tags', 'sent_at', 'payload',
+                       'created_at']
     fields = readonly_fields
     actions = ['resend']
     list_select_related = ['draft']
